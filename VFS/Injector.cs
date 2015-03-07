@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Remoting;
@@ -8,6 +9,7 @@ using EasyHook;
 
 namespace CKAN.VFS
 {
+
     public class FileMonInterface : MarshalByRefObject
     {
         public void IsInstalled(Int32 InClientPID)
@@ -37,7 +39,13 @@ namespace CKAN.VFS
     {
         static String ChannelName = null;
 
-        public static void StartInjectedKSPInstance(string ksp_path, string ksp_args, string injected_dll_path)
+
+        // starts the KSP instance at ksp_path with ksp_args arguments
+        // injected_dll gets injected right at process start
+        // returns a Process instance for the created process
+        // use Process.WaitForExit() to check if KSP is still running
+
+        public static Process StartInjectedKSPInstance(string ksp_path, string ksp_args, string injected_dll)
         {
             // this registers ckan.exe and our injected dll in the GAC
             // requires admin privileges 
@@ -45,7 +53,7 @@ namespace CKAN.VFS
             (
                 "CKAN KSP Injector",
                 Assembly.GetExecutingAssembly().Location,
-                injected_dll_path
+                injected_dll
             );
              
             // create an IPC server which we'll use to communicate with the injected DLL
@@ -58,11 +66,14 @@ namespace CKAN.VFS
                 ksp_path,
                 ksp_args,
                 0,
-                injected_dll_path,
-                injected_dll_path,
+                injected_dll,
+                injected_dll,
                 out targetPID,
                 ChannelName
             );
+
+            return Process.GetProcessById(targetPID);
         }
     }
+
 }
