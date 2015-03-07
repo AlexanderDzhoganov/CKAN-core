@@ -36,48 +36,17 @@ namespace CKAN.VFS
     {
         static String ChannelName = null;
 
-        static void Main(string[] args)
+        public static void StartInjectedKSPInstance(string ksp_path, string ksp_args = "")
         {
-            Int32 TargetPID = 0;
+            Config.Register(
+            "CKAN KSP Injector",
+            "FileMon.exe",
+            "FileMonInject.dll");
 
-            if ((args.Length != 1) || !Int32.TryParse(args[0], out TargetPID))
-            {
-                Console.WriteLine();
-                Console.WriteLine("Usage: FileMon %PID%");
-                Console.WriteLine();
+            RemoteHooking.IpcCreateServer<FileMonInterface>(ref ChannelName, WellKnownObjectMode.SingleCall);
 
-                return;
-            }
-
-            try
-            {
-                try
-                {
-                    Config.Register(
-                        "A FileMon like demo application.",
-                        "FileMon.exe",
-                        "FileMonInject.dll");
-                }
-                catch (ApplicationException)
-                {
-
-                    System.Diagnostics.Process.GetCurrentProcess().Kill();
-                }
-
-                RemoteHooking.IpcCreateServer<FileMonInterface>(ref ChannelName, WellKnownObjectMode.SingleCall);
-
-                RemoteHooking.Inject(
-                    TargetPID,
-                    "FileMonInject.dll",
-                    "FileMonInject.dll",
-                    ChannelName);
-
-                Console.ReadLine();
-            }
-            catch (Exception ExtInfo)
-            {
-                Console.WriteLine("There was an error while connecting to target:\r\n{0}", ExtInfo.ToString());
-            }
+            int targetPID;
+            RemoteHooking.CreateAndInject(ksp_path, ksp_args, 0, "FileMonInject.dll", "FileMonInject.dll", out targetPID, ChannelName);
         }
     }
 }
