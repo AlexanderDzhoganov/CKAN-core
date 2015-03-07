@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.Remoting;
 using System.Text;
 using EasyHook;
@@ -36,17 +37,32 @@ namespace CKAN.VFS
     {
         static String ChannelName = null;
 
-        public static void StartInjectedKSPInstance(string ksp_path, string ksp_args = "")
+        public static void StartInjectedKSPInstance(string ksp_path, string ksp_args, string injected_dll_path)
         {
-            Config.Register(
-            "CKAN KSP Injector",
-            "FileMon.exe",
-            "FileMonInject.dll");
-
+            // this registers ckan.exe and our injected dll in the GAC
+            // requires admin privileges 
+            Config.Register
+            (
+                "CKAN KSP Injector",
+                Assembly.GetExecutingAssembly().Location,
+                injected_dll_path
+            );
+             
+            // create an IPC server which we'll use to communicate with the injected DLL
             RemoteHooking.IpcCreateServer<FileMonInterface>(ref ChannelName, WellKnownObjectMode.SingleCall);
 
+            // this does the actual process creation and injects our DLL
             int targetPID;
-            RemoteHooking.CreateAndInject(ksp_path, ksp_args, 0, "FileMonInject.dll", "FileMonInject.dll", out targetPID, ChannelName);
+            RemoteHooking.CreateAndInject
+            (
+                ksp_path,
+                ksp_args,
+                0,
+                injected_dll_path,
+                injected_dll_path,
+                out targetPID,
+                ChannelName
+            );
         }
     }
 }
